@@ -105,7 +105,8 @@ class GntInstance(GntCommand):
         return self._run_command(
             *build_gnt_instance_list_arguments(*names, header_names=header_names),
             command='list',
-            parser=parse_ganeti_list_output
+            parser=parse_ganeti_list_output,
+            return_none_if_error=True
         )
 
     def add(self, name:str, params: dict):
@@ -119,7 +120,7 @@ class GntInstance(GntCommand):
             build_dict_options_with_prefix(
                 params.get('hypervisor_param'),
                 'hypervisor-parameters',
-                prefixes=PrefixStr(params['hypervisor'])
+                prefixes=PrefixStr(params.get('hypervisor'))
             ),
             build_dict_options_with_prefix(params.get('os_params'), 'os-parameters'),
             build_dict_options_with_prefix(

@@ -304,8 +304,10 @@ class GntCommand(ABC):
 
         cmd = build_ganeti_cmd(*args, cmd=command, binary=self.binary)
         #print(cmd)
-        code, stdout, stderr = self.run_function(cmd, check_rc=True)
+        code, stdout, stderr = self.run_function(cmd, check_rc=False)
         if code != 0:
+            if return_none_if_error:
+                return None
             msg='Command "{}" failed'.format(cmd)
             if self.error_function:
                 return self.error_function(code, stdout, stderr, msg=msg)

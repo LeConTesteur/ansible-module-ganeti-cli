@@ -36,13 +36,34 @@
       update_cache: yes
   - name: create bridge
     copy:
-      src: br_gnt.conf
+      src: br_gnt
       dest: /etc/network/interfaces.d/
       owner: root
       group: root
       mode: 0644
     notify:
       - restart network
+  - name: Create /root.ssh
+    file:
+      path: /root/.ssh
+      state: directory
+  - name: Send file-storage-paths
+    copy:
+      src: file-storage-paths
+      dest: /etc/ganeti/file-storage-paths
+  # hostname
+  - name: Send hostname
+    copy:
+      src: hostname
+      dest: /etc/hostname
+    notify:
+      - reload hostname
+  - name: send hosts
+    template:
+      src: hosts.j2
+      dest: /etc/hosts
+    vars:
+      node1_ip: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}"
   handlers:
     - name: restart network
       ansible.builtin.systemd:
@@ -52,4 +73,6 @@
       ansible.builtin.systemd:
         state: restarted
         name: sshd
+    - name: reload hostname
+      shell: hostname -F /etc/hostname
 
