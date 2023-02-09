@@ -1,8 +1,10 @@
 - hosts: all
   become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   tasks:
     - name: Create Instance
-      ganeti.cli.ganeti_instance_cli:
+      ganeti.cli.gnt_instance:
         name: test
         state: present
         params:
