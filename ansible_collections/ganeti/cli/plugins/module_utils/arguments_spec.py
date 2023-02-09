@@ -201,7 +201,7 @@ ganeti_instance_args_spec = {
     "hypervisor":ArgumentSpec(type='str', default='kvm',
                             choices=hypervisor_choices),
     "iallocator":ArgumentSpec(type='str', required=False,
-                            default='hail', gnt_list_ignore=True),
+                            default=None, gnt_list_ignore=True),
     "nics":ArgumentSpec(type='list', required=False, options=nics_options),
     "os_type":ArgumentSpec(type='str', required=False, gnt_list_field='os'),
     #osparams=dict(type='dict', required=False, options=osparams),

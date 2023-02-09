@@ -122,7 +122,7 @@ def main_with_module(module: AnsibleModule) -> None:
             return next(
                 filter(
                     lambda x: x.get('name') == name,
-                    gnt_instance.list(name)
+                    gnt_instance.info(name) or []
                 )
             )
         except StopIteration:

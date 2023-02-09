@@ -2,6 +2,8 @@
 Class GntInstance
 """
 from typing import Callable, List
+import re
+from flatdict import FlatterDict
 
 from ansible_collections.ganeti.cli.plugins.module_utils.gnt_command import (
   GntCommand,
@@ -17,7 +19,26 @@ from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance_list impor
   parse_ganeti_list_output
 )
 
+from ansible_module_ganeti_cli.module_utils.parse_info_response import (
+  parse_from_stdout
+)
+
 GNT_INSTALL_CMD_DEFAULT = 'gnt-instance'
+
+def parse_state(state:str):
+    match = re.match(r'configured to be (?P<admin_state>\w+), actual state is (?P<state>\w+)', state)
+    return match.group('admin_state'),  match.group('state')
+
+def parse_info_instances(*_, stdout: str, **__) -> List[FlatterDict]:
+    d_info = parse_from_stdout(stdout=stdout)
+    l_info = []
+    for k, value in d_info.as_dict().items():
+        admin_state, state = parse_state(value['state'])
+        d_info[k]['state'] = state
+        d_info[k]['admin_state'] = admin_state
+        l_info.append(d_info[k])
+    print(l_info)
+    return l_info
 
 class GntInstance(GntCommand):
     """
@@ -140,4 +161,12 @@ class GntInstance(GntCommand):
             ),
             name,
             command='modify'
+        )
+
+    def info(self, name:str):
+        self._run_command(
+            name,
+            command='info',
+            parser=parse_info_instances,
+            return_none_if_error=True
         )

@@ -69,11 +69,11 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
     def _call_test(self, module_args, vm_info, have_change=True, info_call=1, reboot_call=0, add_call=0, stop_call=0, modify_call=0, remove_call=0):
         set_module_args(module_args)
 
-        self.mock_instance.list = Mock(return_value=vm_info)
+        self.mock_instance.info = Mock(return_value=vm_info)
         with self.assertRaises(AnsibleExitJson) as result:
             main(catch_exception=False)
         self._assertChangedEqual(result, have_change)
-        self.assertEqual(self.mock_instance.list.call_count, info_call)
+        self.assertEqual(self.mock_instance.info.call_count, info_call)
         self.assertEqual(self.mock_instance.reboot.call_count, reboot_call)
         self.assertEqual(self.mock_instance.add.call_count, add_call)
         self.assertEqual(self.mock_instance.stop.call_count, stop_call)
@@ -96,7 +96,7 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
         self.mock_instance.list.return_value = [{'name': 'vm_test2', 'admin_state':'down'}]
         with self.assertRaises(AnsibleFailJson):
             main(catch_exception=False)
-        self.assertEqual(self.mock_instance.list.call_count, 1)
+        self.assertEqual(self.mock_instance.info.call_count, 1)
         self.assertEqual(self.mock_instance.reboot.call_count, 0)
         self.assertEqual(self.mock_instance.add.call_count, 0)
         self.assertEqual(self.mock_instance.modify.call_count, 0)
