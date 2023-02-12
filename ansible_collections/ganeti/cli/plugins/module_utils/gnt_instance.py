@@ -19,7 +19,7 @@ from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance_list impor
   parse_ganeti_list_output
 )
 
-from ansible_module_ganeti_cli.module_utils.parse_info_response import (
+from ansible_collections.ganeti.cli.plugins.module_utils.parse_info_response import (
   parse_from_stdout
 )
 
@@ -164,7 +164,7 @@ class GntInstance(GntCommand):
             command='modify'
         )
 
-    def info(self, name:str):
+    def info(self, name:str) -> List[FlatterDict]:
         self._run_command(
             name,
             command='info',

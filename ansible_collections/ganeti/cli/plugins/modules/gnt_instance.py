@@ -175,6 +175,7 @@ def main_with_module(module: AnsibleModule) -> None:
 
     vm_name = module.params['name']
     vm_info = get_vm_info(vm_name)
+
     if module.params['state'] == 'present':
         if not vm_is_present_on_remote(vm_name, vm_info) and not module.params['params']:
             module.fail_json(

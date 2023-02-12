@@ -2,7 +2,7 @@
   Parse generic info response
 """
 import re
-from flatdict import FlatterDict
+from flatdict import FlatterDict, FlatDict
 import yaml
 from enum import Enum
 INFO = """
@@ -324,7 +324,8 @@ def parse(info: str, parse_type:ParseType = ParseType.RAW) -> FlatterDict:
     if parse_type == ParseType.TRUE_VALUE:
         info = true_value(info)
     info_parsed = yaml.safe_load(info)
-    info_flatted = FlatterDict(info_parsed, delimiter=DELIMITER)
+    print(info_parsed)
+    info_flatted = FlatDict(info_parsed, delimiter=DELIMITER)
     for k in info_flatted.keys():
         info_flatted[transform_key(k)] = info_flatted.pop(k)
     return info_flatted
@@ -341,4 +342,4 @@ def parse_from_stdout(*_, stdout: str, **__) -> FlatterDict:
     """
     return parse(stdout)
 
-#print(parse(INFO_INSTANCE, parse_type=ParseType.TRUE_VALUE))
+print(parse(INFO_INSTANCE, parse_type=ParseType.DEFAULT_TO_NONE))

@@ -23,7 +23,15 @@
       name:
         - pip
         - setuptools
+      extra_args: --upgrade
+    vars:
+      ansible_python_interpreter: /usr/bin/python3
+  - name: Install dependance package
+    pip:
+      name:
         - pyyaml
+        - dictdiffer
+        - flatdict
       extra_args: --upgrade
     vars:
       ansible_python_interpreter: /usr/bin/python3
