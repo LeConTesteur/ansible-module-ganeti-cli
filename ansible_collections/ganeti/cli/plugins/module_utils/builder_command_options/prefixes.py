@@ -94,7 +94,7 @@ def format_prefix(prefix: Prefix, index: int) -> str:
         PrefixTypeEnum.NONE: "",
         PrefixTypeEnum.INDEX: "{}:".format(index),
         PrefixTypeEnum.MODIFY: "{}:modify:".format(index),
-        PrefixTypeEnum.ADD: "add:",
+        PrefixTypeEnum.ADD: "{}:add:".format(index),
         PrefixTypeEnum.REMOVE: "{}:remove".format(index),
         PrefixTypeEnum.STR: "{}:".format(prefix.prefix)
     }[prefix.type]

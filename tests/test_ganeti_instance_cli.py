@@ -174,3 +174,6 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
             reboot_call=1,
             modify_call=1
         )
+
+if __name__ == '__main__':
+    unittest.main()
