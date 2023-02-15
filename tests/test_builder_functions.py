@@ -51,10 +51,10 @@ class TestBuildCmmandOptionsExtractors(unittest.TestCase):
 
 class TestBuildPrefixesFromCountDiff(unittest.TestCase):
 
-    def test_count_equal_0_return_empty(self):
+    def test_count_equal_0_return_remove(self):
         self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(0,0)), [])
-        self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(0,1)), [])
-        self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(0,-1)), [])
+        self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(0,1)), [PrefixRemove()])
+        self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(0,3)), [PrefixRemove(),PrefixRemove(),PrefixRemove()])
 
     def test_count_lower_0_return_empty(self):
         self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(-1,0)), [])
@@ -62,10 +62,14 @@ class TestBuildPrefixesFromCountDiff(unittest.TestCase):
         self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(-1,-1)), [])
 
     def test_remote_count_equal_lower_0_raise_exception(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
+            builder_functions.build_prefixes_from_count_diff(0,-1)
+        with self.assertRaises(ValueError):
             builder_functions.build_prefixes_from_count_diff(2,-3)
 
-    def test_remote_count_equal_exptected_count_return_nth_prefix(self):
+
+
+    def test_remote_count_equal_expected_count_return_nth_prefix(self):
         self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(1,1)), [PrefixModify()])
         self.assertEqual(list(builder_functions.build_prefixes_from_count_diff(3,3)), [
                PrefixModify(),

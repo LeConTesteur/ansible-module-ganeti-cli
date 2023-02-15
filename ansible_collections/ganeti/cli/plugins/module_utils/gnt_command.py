@@ -47,47 +47,6 @@ def run_ganeti_cmd(
         )
     return parser(*args, stdout=stdout, **kwargs)
 
-
-
-
-
-
-
-
-
-
-def build_gnt_instance_state_options(params: dict) -> List[str]:
-    """Build all options which are state (--no-*)
-
-    Args:
-        params (dict): Dict of data
-
-    Returns:
-        List[str]: List of option
-    """
-    return [
-        build_state_option("name-check", params['name_check']),
-        build_state_option("ip-check", params['ip_check']),
-    ]
-
-def build_gnt_instance_add_single_options(params: dict) -> List[str]:
-    """Build all options which are not list
-
-    Args:
-        params (dict): Dict of data
-
-    Returns:
-        List[str]: List of option
-    """
-    return [
-        build_single_option("disk-template", params['disk_template']),
-        build_single_option("os-type", params['os_type']),
-        build_single_option("pnode", params['pnode']),
-        build_single_option("iallocator", params['iallocator']),
-    ]
-
-
-
 # pylint: disable=unused-argument
 def parse_ganeti_cmd_output(*_, stdout: str, **__):
     """

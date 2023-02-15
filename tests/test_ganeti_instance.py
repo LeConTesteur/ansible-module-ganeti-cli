@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch, Mock
 from ansible.module_utils import basic
 from ansible.module_utils.common.text.converters import to_bytes
-from ansible_collections.ganeti.cli.plugins.modules.ganeti_instance_cli import main
+from ansible_collections.ganeti.cli.plugins.modules.gnt_instance import main
 
 def set_module_args(args):
     """prepare arguments so that they will be picked up during module creation"""
@@ -56,7 +56,7 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
                                                  exit_json=exit_json,
                                                  fail_json=fail_json)
         self.mock_gnt_instance_helper = patch(
-            'ansible_collections.ganeti.cli.plugins.modules.ganeti_instance_cli.GntInstance',
+            'ansible_collections.ganeti.cli.plugins.modules.gnt_instance.GntInstance',
             autospec=True
         )
         self.mock_module_helper.start()
@@ -66,13 +66,14 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
         self.addCleanup(self.mock_module_helper.stop)
 
     # pylint: disable=too-many-arguments
-    def _call_test(self, module_args, vm_info, have_change=True, info_call=1, reboot_call=0, add_call=0, stop_call=0, modify_call=0, remove_call=0):
+    def _call_test(self, module_args, vm_info, expected_change=True, have_change=False, info_call=1, reboot_call=0, add_call=0, stop_call=0, modify_call=0, remove_call=0):
         set_module_args(module_args)
 
         self.mock_instance.info = Mock(return_value=vm_info)
+        self.mock_instance.config_and_remote_have_different = Mock(return_value=have_change)
         with self.assertRaises(AnsibleExitJson) as result:
             main(catch_exception=False)
-        self._assertChangedEqual(result, have_change)
+        self._assertChangedEqual(result, expected_change)
         self.assertEqual(self.mock_instance.info.call_count, info_call)
         self.assertEqual(self.mock_instance.reboot.call_count, reboot_call)
         self.assertEqual(self.mock_instance.add.call_count, add_call)
@@ -117,7 +118,7 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
             'name': 'vm_test',
         },
         [],
-        have_change=False)
+        expected_change=False)
 
     def test_nothing_if_expected_absent_and_not_exist_2(self):
         self._call_test({
@@ -125,7 +126,7 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
             'name': 'vm_test',
         },
         [{'name': 'vm_test2', 'admin_state':'up'}],
-        have_change=False)
+        expected_change=False)
 
     def test_nothing_if_expected_present_and_was_up_and_have_no_change(self):
         self._call_test({
@@ -133,7 +134,7 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
             'name': 'vm_test',
         },
         [{'name': 'vm_test', 'admin_state':'up'}],
-        have_change=False,
+        expected_change=False,
         reboot_call=0
         )
 
@@ -171,6 +172,7 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
                 }
             },
             [{'name': 'vm_test', 'disk_template':'plain','admin_state':'down'}],
+            have_change=True,
             reboot_call=1,
             modify_call=1
         )

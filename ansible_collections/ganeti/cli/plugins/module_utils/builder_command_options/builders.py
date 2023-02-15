@@ -5,7 +5,7 @@ from itertools import chain, repeat, zip_longest
 import re
 import abc
 from typing import Any, Dict, Iterator, List, Union, Callable
-from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builder_functions import build_options_with_prefixes, build_prefixes_from_count_diff, build_single_option, build_sub_dict_options
+from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builder_functions import build_options_with_prefixes, build_prefixes_from_count_diff, build_single_option, build_state_option, build_sub_dict_options
 from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.extractors import ValueInfoExtractor, ValueParamExtractor, recursive_get, size_param_info_extractor, value_info_extractor
 
 
@@ -30,12 +30,13 @@ PrefixBuilder = Callable[[Any, Any], Prefix]
 
 
 class BuilderCommandOptionsSpecAbstract:
-    def __init__(self, *, parent = None, name:str, info_key:str=None, param_extractor:ValueParamExtractor=recursive_get, info_extractor:ValueInfoExtractor=value_info_extractor) -> None:
+    def __init__(self, *, parent = None, name:str, info_key:str=None, param_extractor:ValueParamExtractor=recursive_get, info_extractor:ValueInfoExtractor=value_info_extractor, **kwargs) -> None:
         self._name = name
         self._info_key = info_key
         self.parent = parent
         self._param_extractor = param_extractor
         self._info_extractor = info_extractor
+        self._extra_args = kwargs
     
     def __repr__(self) -> str:
         return 'Spec: {} -> {}'.format(self._name, self._info_key)
@@ -140,6 +141,7 @@ class BuilderCommandOptionsSpecList(BuilderCommandOptionsSpec):
         if size_param_list == 0 and self.no_option:
             value.append(self.no_option)
         prefixes = list(build_prefixes_from_count_diff(size_param_list, size_info_list))
+
         value.append(
             build_options_with_prefixes(
                 chain.from_iterable([
@@ -168,20 +170,13 @@ class _BuilderCommandOptionsSpecListElement(BuilderCommandOptionsSpecAbstract):
         
 
 class BuilderCommandOptionsSpecElement(BuilderCommandOptionsSpecAbstract):
-    def __init__(self, *, type:str, required:bool=False, default: Any = None, default_ganeti:str=DEFAULT_VALUE, build_function=build_single_option, **kwargs) -> None:
+    def __init__(self, *, default_ganeti:str=DEFAULT_VALUE, build_function=build_single_option, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.type = type
-        self.required = required
-        self.default = default
         self.default_ganeti = default_ganeti
         self.build_function = build_function
 
     def to_args_spec(self) -> Dict:
-        return {
-            'type': self.type,
-            'required': self.required,
-            'default': self.default
-        }
+        return {key: value for key, value in self._extra_args.items()}
     
     def to_options(self, ansible_param, info) -> Iterator[str]:
         param_value = self._param_extractor(ansible_param, self.names())
@@ -217,10 +212,23 @@ class BuilderCommandOptionsSpecSubElement(BuilderCommandOptionsSpecElement):
 class BuilderCommandOptionsSpecListSubElement(BuilderCommandOptionsSpecSubElement):
     def __init__(self, *_, default_ganeti=NONE_VALUE, **kwargs):
         super().__init__(default_ganeti=default_ganeti, **kwargs)
+        
+class BuilderCommandOptionsSpecElementOnlyCreate(BuilderCommandOptionsSpecElement):
+    def __init__(self, *, build_function=build_single_option, **kwargs) -> None:
+        super().__init__(build_function=build_function, **kwargs)
+        
+    def to_options(self, ansible_param, info) -> Iterator[str]:
+        if not info:
+            return ''
+        return super().to_options(ansible_param, info)
+
+class BuilderCommandOptionsSpecStateElement(BuilderCommandOptionsSpecElementOnlyCreate):
+    def __init__(self, *_, **kwargs) -> None:
+        super().__init__(build_function=build_state_option, **kwargs)
+
 
 class BuilderCommand:
-    def __init__(self, binary:str, spec:BuilderCommandOptionsSpec) -> None:
-        self.binary:str = binary
+    def __init__(self, spec:BuilderCommandOptionsSpec) -> None:
         self.spec:BuilderCommandOptionsSpec = spec
 
     def generate_args_spec(self) -> Dict:
@@ -231,7 +239,6 @@ class BuilderCommand:
             filter(
                 lambda x:x, 
                 chain(
-                    [self.binary, command],
                     extra_options,
                     self.spec.to_options(module_params, info_data)
                 )

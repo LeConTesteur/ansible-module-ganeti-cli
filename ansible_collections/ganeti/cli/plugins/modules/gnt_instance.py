@@ -4,6 +4,8 @@ ansible gnt-instance module
 """
 
 from __future__ import (absolute_import, division, print_function)
+
+from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builders import BuilderCommand
 __metaclass__ = type  # pylint: disable=invalid-name
 
 from ansible.module_utils.basic import AnsibleModule
@@ -11,7 +13,7 @@ from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance_list impor
     get_keys_to_change_module_params_and_result
 )
 from ansible_collections.ganeti.cli.plugins.module_utils.arguments_spec import ganeti_instance_args_spec
-from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance import GntInstance
+from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance import GntInstance, builder_gnt_instance_spec
 
 
 DOCUMENTATION = r'''
@@ -84,7 +86,7 @@ admin_state_choices = ['restarted', 'started', 'stopped']
 module_args = {
     "name": {"type":'str', "required":True, "aliases":['instance_name']},
     "state": {"type":'str', "required":False, "default":'present', "choises":state_choices},
-    "params": {"type":'dict', "required":False, "options":ganeti_instance_args_spec},
+    "params": BuilderCommand(builder_gnt_instance_spec).generate_args_spec(),
     "admin_state": {
         "type":'str', "required":False, "default":'started', "choises":admin_state_choices
     },
@@ -129,7 +131,7 @@ def main_with_module(module: AnsibleModule) -> None:
             return None
 
     def have_vm_change(options, remote):
-        return len(get_keys_to_change_module_params_and_result(options, remote)) > 0
+        return gnt_instance.config_and_remote_have_different(options, remote)
 
     def create_vm(name: str, vm_params):
         return gnt_instance.add(
@@ -137,14 +139,11 @@ def main_with_module(module: AnsibleModule) -> None:
             vm_params
         )
 
-    def modify_vm(name: str, vm_params):
-        disk_count = len(vm_params.get('disks', []) or [])
-        nic_count = len(vm_params.get('nics', []) or [])
+    def modify_vm(name: str, vm_params: dict, vm_info: dict):
         return gnt_instance.modify(
             name,
             vm_params,
-            actual_disk_count=disk_count,
-            actual_nic_count=nic_count
+            vm_info
         )
 
     def reboot_vm(name: str):
@@ -182,10 +181,10 @@ def main_with_module(module: AnsibleModule) -> None:
                 msg='The params of VM must be present if VM does\'t exist')
 
         if not vm_is_present_on_remote(vm_name, vm_info):
-            create_vm(vm_name, module.params['params'])
+            create_vm(vm_name, module.params)
             result['changed'] = True
         elif have_vm_change(module.params['params'], vm_info):
-            modify_vm(vm_name, module.params['params'])
+            modify_vm(vm_name, module.params, vm_info)
             result['changed'] = True
         if module.params['admin_state'] == 'restarted' or \
                 module.params['admin_state'] == 'started' and result['changed'] or \

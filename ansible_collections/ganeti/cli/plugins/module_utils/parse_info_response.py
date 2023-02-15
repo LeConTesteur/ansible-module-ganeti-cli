@@ -2,6 +2,7 @@
   Parse generic info response
 """
 import re
+from typing import Dict
 from flatdict import FlatterDict, FlatDict
 import yaml
 from enum import Enum
@@ -307,7 +308,30 @@ class ParseType(Enum):
     DEFAULT_TO_NONE = 1
     TRUE_VALUE = 2
 
-def parse(info: str, parse_type:ParseType = ParseType.RAW) -> FlatterDict:
+#def parse(info: str, parse_type:ParseType = ParseType.RAW) -> FlatterDict:
+#    """Parse info output.
+#    - Using yaml parser.
+#    - Flat parsed data
+#    - Transform key for directly use it
+#
+#    Args:
+#        info (str): Data to parse
+#
+#    Returns:
+#        FlatterDict: Dict of data
+#    """
+#    if parse_type == ParseType.DEFAULT_TO_NONE:
+#        info = default_to_none(info)
+#    if parse_type == ParseType.TRUE_VALUE:
+#        info = true_value(info)
+#    info_parsed = yaml.safe_load(info)
+#    print(info_parsed)
+#    info_flatted = FlatDict(info_parsed, delimiter=DELIMITER)
+#    for k in info_flatted.keys():
+#        info_flatted[transform_key(k)] = info_flatted.pop(k)
+#    return info_flatted
+
+def parse(info: str) -> Dict:
     """Parse info output.
     - Using yaml parser.
     - Flat parsed data
@@ -319,17 +343,7 @@ def parse(info: str, parse_type:ParseType = ParseType.RAW) -> FlatterDict:
     Returns:
         FlatterDict: Dict of data
     """
-    if parse_type == ParseType.DEFAULT_TO_NONE:
-        info = default_to_none(info)
-    if parse_type == ParseType.TRUE_VALUE:
-        info = true_value(info)
-    info_parsed = yaml.safe_load(info)
-    print(info_parsed)
-    info_flatted = FlatDict(info_parsed, delimiter=DELIMITER)
-    for k in info_flatted.keys():
-        info_flatted[transform_key(k)] = info_flatted.pop(k)
-    return info_flatted
-
+    return yaml.safe_load(info)
 
 def parse_from_stdout(*_, stdout: str, **__) -> FlatterDict:
     """_summary_
@@ -341,5 +355,3 @@ def parse_from_stdout(*_, stdout: str, **__) -> FlatterDict:
         FlatterDict: _description_
     """
     return parse(stdout)
-
-print(parse(INFO_INSTANCE, parse_type=ParseType.DEFAULT_TO_NONE))

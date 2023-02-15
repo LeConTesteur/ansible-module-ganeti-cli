@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from itertools import chain, repeat, zip_longest
 from typing import Any, Iterator, List, Union
 from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.prefixes import (
@@ -27,7 +28,7 @@ def build_prefixes_from_count_diff(expected_count:int, actual_count: int) -> Ite
     Yields:
         Iterator: An iterator of Prefix
     """
-    if expected_count <= 0:
+    if expected_count < 0:
         return iter([])
 
     if actual_count < 0:
@@ -49,13 +50,20 @@ def build_prefixes_from_count_diff(expected_count:int, actual_count: int) -> Ite
                 repeat(PrefixModify(), actual_count),
                 repeat(PrefixAdd(), abs(count_diff))
             )
-    return iter(ret)
+    return ret
 
 def build_options_with_prefixes(
         options: List[str], option_name:str, prefixes: Union[List[Prefix], Prefix]=None) -> str:
     """
     Builder of options for add list options (like --net, --disk)
     """
+    lastPrefix:Prefix = None
+    def remove_none(x):
+        nonlocal lastPrefix
+        option = x[0] or ''
+        prefix = x[1] or lastPrefix or PrefixNone()
+        lastPrefix = prefix
+        return (option, prefix)
 
     if not options:
         return ""
@@ -64,7 +72,9 @@ def build_options_with_prefixes(
         raise ValueError('Missing option_name')
 
     if not prefixes:
-        prefixes = [PrefixNone()]
+        prefixes = []
+
+    it = map(remove_none, zip_longest(options, prefixes, fillvalue=None))
 
     return " ".join(
         [
@@ -74,7 +84,7 @@ def build_options_with_prefixes(
                 options=value[0] \
                         if value[1].type != PrefixTypeEnum.REMOVE else ''
             )
-            for index, value in enumerate(zip_longest(options, prefixes, fillvalue=prefixes[-1]))
+            for index, value in enumerate(it)
             if value[0]
         ]
     )
