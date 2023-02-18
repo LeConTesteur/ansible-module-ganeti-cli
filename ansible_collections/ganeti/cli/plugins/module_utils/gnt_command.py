@@ -1,9 +1,7 @@
 """
 Contains all commands of gnt-instance except gnt-instance list
 """
-from itertools import zip_longest, chain, repeat
-from typing import Callable, Any, List, Dict, Iterator, Union
-from enum import Enum
+from typing import Callable, Any, List, Union
 from abc import ABC
 
 def build_ganeti_cmd(*args:List[str], binary:str, cmd:str) -> str:
@@ -74,7 +72,7 @@ class GntCommand(ABC):
             parser = parse_ganeti_cmd_output
 
         cmd = build_ganeti_cmd(*args, cmd=command, binary=self.binary)
-        #print(cmd)
+        print(cmd)
         code, stdout, stderr = self.run_function(cmd, check_rc=False)
         if code != 0:
             if return_none_if_error:

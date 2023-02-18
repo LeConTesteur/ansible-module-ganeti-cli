@@ -2,7 +2,8 @@
 Module contains the arguments spec of gnt-instance module
 """
 from collections import UserDict
-from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builders import DEFAULT_VALUE, NONE_VALUE, _BuilderCommandOptionsSpecListElement, BuilderCommandOptionsRootSpec, BuilderCommandOptionsSpec, BuilderCommandOptionsSpecDict, BuilderCommandOptionsSpecElement, BuilderCommandOptionsSpecElementOnlyCreate, BuilderCommandOptionsSpecList, BuilderCommandOptionsSpecListSubElement, BuilderCommandOptionsSpecStateElement, BuilderCommandOptionsSpecSubElement
+from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builders \
+    import DEFAULT_VALUE
 
 
 MAX_NICS = 8

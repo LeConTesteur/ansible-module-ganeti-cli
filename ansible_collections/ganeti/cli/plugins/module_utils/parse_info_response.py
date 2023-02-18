@@ -3,9 +3,9 @@
 """
 import re
 from typing import Dict
-from flatdict import FlatterDict, FlatDict
-import yaml
 from enum import Enum
+import yaml
+
 INFO = """
 Cluster name: smc-manual-resources
 Cluster UUID: 690b0a04-35ba-4ca0-8e3f-fd866566736e
@@ -266,18 +266,63 @@ INFO_INSTANCE ="""
 DELIMITER='.'
 
 def remove_after_dash(key:str, delimiter=DELIMITER) -> str:
+    """_summary_
+
+    Args:
+        key (str): _description_
+        delimiter (_type_, optional): _description_. Defaults to DELIMITER.
+
+    Returns:
+        str: _description_
+    """
     return re.sub(r'\s+[-](\s|\w)+[^{delimiter}]'.format(delimiter=delimiter), '', key).strip()
 
 def remove_parenthesis(key:str) -> str:
+    """_summary_
+
+    Args:
+        key (str): _description_
+        delimiter (_type_, optional): _description_. Defaults to DELIMITER.
+
+    Returns:
+        str: _description_
+    """
     return re.sub(r'\s+[(](\s|\w)+[)]', '', key).strip()
 
 def remove_list_index(key:str) -> str:
+    """_summary_
+
+    Args:
+        key (str): _description_
+        delimiter (_type_, optional): _description_. Defaults to DELIMITER.
+
+    Returns:
+        str: _description_
+    """
     return re.sub(r'[/]\w+', '', key).strip()
 
 def remove_duplicate_underscore(key: str) -> str:
+    """_summary_
+
+    Args:
+        key (str): _description_
+        delimiter (_type_, optional): _description_. Defaults to DELIMITER.
+
+    Returns:
+        str: _description_
+    """
     return re.sub(r'[_]+', '_', key).strip()
 
 def replace_space_and_lower_all(key:str) -> str:
+    """_summary_
+
+    Args:
+        key (str): _description_
+        delimiter (_type_, optional): _description_. Defaults to DELIMITER.
+
+    Returns:
+        str: _description_
+    """
     return key.replace(' ', '_').lower()
 
 def transform_key(key: str) -> str:
@@ -290,20 +335,54 @@ def transform_key(key: str) -> str:
         str: _description_
     """
 
-    for f_format in [remove_after_dash, remove_parenthesis, remove_list_index,replace_space_and_lower_all, remove_duplicate_underscore]:
-      key = f_format(key)
+    for f_format in [
+      remove_after_dash,
+      remove_parenthesis,
+      remove_list_index,
+      replace_space_and_lower_all,
+      remove_duplicate_underscore]:
+        key = f_format(key)
     return  key
 
-def transform_None_to_None(info:str):
+def transform_none_to_none(info:str):
+    """_summary_
+
+    Args:
+        info (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
     return re.sub(r'None', 'null', info)
 
 def default_to_none(info:str):
-    return re.sub(r'default [(]([^)])+[)]', 'null', transform_None_to_None(info))
+    """_summary_
+
+    Args:
+        info (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return re.sub(r'default [(]([^)])+[)]', 'null', transform_none_to_none(info))
 
 def true_value(info:str):
-    return re.sub(r'default [(]([^)]+)[)]', r'\1', transform_None_to_None(info))
+    """_summary_
+
+    Args:
+        info (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return re.sub(r'default [(]([^)]+)[)]', r'\1', transform_none_to_none(info))
 
 class ParseType(Enum):
+    """_summary_
+
+    Args:
+        Enum (_type_): _description_
+    """
     RAW = 0
     DEFAULT_TO_NONE = 1
     TRUE_VALUE = 2
@@ -341,11 +420,11 @@ def parse(info: str) -> Dict:
         info (str): Data to parse
 
     Returns:
-        FlatterDict: Dict of data
+        Dict: Dict of data
     """
     return yaml.safe_load(info)
 
-def parse_from_stdout(*_, stdout: str, **__) -> FlatterDict:
+def parse_from_stdout(*_, stdout: str, **__) -> Dict:
     """_summary_
 
     Args:

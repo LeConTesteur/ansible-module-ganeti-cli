@@ -12,11 +12,16 @@ Test Setup    Test Setup
 ${INVENTORY}    inventory
 ${INVENTORY_ABSOLUE_PATH}    ac_tests/${INVENTORY}
 ${PLAYBOOK_INSTANCE}    pk_instance.yml
+${PLAYBOOK_INSTANCE2}    pk_instance2.yml
 
 *** Test Cases ***
 Test
     Run Ansible Playbook    ${PLAYBOOK_INSTANCE}    inventory=${INVENTORY}
-
+    ${stdout}=    Execute Command    sudo gnt-instance info --all
+    Log    ${stdout}
+    Run Ansible Playbook    ${PLAYBOOK_INSTANCE2}    inventory=${INVENTORY}
+    ${stdout}=    Execute Command    sudo gnt-instance info --all
+    Log    ${stdout}
 
 *** Keywords ***
 Suite Setup

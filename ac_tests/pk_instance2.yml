@@ -11,8 +11,6 @@
           disk-template: file
           disk:
             - size: 10G
-            - name: disk2
-              size: 2G
           os-type: noop
           name-check: False
           ip-check: False
@@ -21,6 +19,9 @@
             - name: test
               link: br_gnt
               mode: bridged
+              vlan: 50
             - name: test2
               link: br_gnt
-              vlan: 100
+            - name: test3
+              link: br_gnt
+              vlan: 200

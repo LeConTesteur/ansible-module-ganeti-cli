@@ -4,16 +4,16 @@ ansible gnt-instance module
 """
 
 from __future__ import (absolute_import, division, print_function)
-
-from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builders import BuilderCommand
+from typing import Dict
 __metaclass__ = type  # pylint: disable=invalid-name
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance_list import (
-    get_keys_to_change_module_params_and_result
+from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builders \
+    import BuilderCommand
+from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance import (
+    GntInstance,
+    builder_gnt_instance_spec
 )
-from ansible_collections.ganeti.cli.plugins.module_utils.arguments_spec import ganeti_instance_args_spec
-from ansible_collections.ganeti.cli.plugins.module_utils.gnt_instance import GntInstance, builder_gnt_instance_spec
 
 
 DOCUMENTATION = r'''
@@ -119,11 +119,13 @@ def main_with_module(module: AnsibleModule) -> None:
     def vm_is_present_on_remote(name: str, vm_info):
         return vm_info is not None and vm_info['name'] == name
 
-    def get_vm_info(name: str):
+    def get_vm_info(name: str) -> Dict:
+        def filter_by_name(vm_info: Dict) -> bool:
+            return vm_info.get('name') == name
         try:
             return next(
                 filter(
-                    lambda x: x.get('name') == name,
+                    filter_by_name,
                     gnt_instance.info(name) or []
                 )
             )

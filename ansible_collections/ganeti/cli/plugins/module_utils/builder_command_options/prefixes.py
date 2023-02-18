@@ -1,3 +1,5 @@
+"""Prefixes for arguments list.
+"""
 from enum import Enum
 
 
@@ -93,8 +95,8 @@ def format_prefix(prefix: Prefix, index: int) -> str:
     return {
         PrefixTypeEnum.NONE: "",
         PrefixTypeEnum.INDEX: "{}:".format(index),
-        PrefixTypeEnum.MODIFY: "{}:modify:".format(index),
-        PrefixTypeEnum.ADD: "{}:add:".format(index),
+        PrefixTypeEnum.MODIFY: "{}:modify,".format(index),
+        PrefixTypeEnum.ADD: "{}:add,".format(index),
         PrefixTypeEnum.REMOVE: "{}:remove".format(index),
         PrefixTypeEnum.STR: "{}:".format(prefix.prefix)
     }[prefix.type]
