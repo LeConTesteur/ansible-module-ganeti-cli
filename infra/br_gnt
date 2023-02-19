@@ -7,4 +7,4 @@ iface br_gnt inet dhcp
 	bridge_stp off       # disable Spanning Tree Protocol
     bridge_waitport 0    # no delay before a port becomes available
     bridge_fd 0          # no forwarding delay
-    post-up ip addr flush ens5
+    pre-up ip addr flush ens5
