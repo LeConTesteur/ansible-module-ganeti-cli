@@ -116,7 +116,8 @@ builder_gnt_instance_spec = BuilderCommandOptionsRootSpec(
     BuilderCommandOptionsSpecList(
         *nics_options,
         name='net',
-        info_key='NICs'
+        info_key='NICs',
+        no_option='--no-nics --ignore-ipolicy'
     ),
     BuilderCommandOptionsSpecElement(name='os-type', type='str', required=True, info_key='Operating system'),
     BuilderCommandOptionsSpecDict(

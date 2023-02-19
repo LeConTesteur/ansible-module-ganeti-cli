@@ -6,22 +6,45 @@ Library    String
 Suite Setup    Suite Setup
 #Suite Teardown    Suite Teardown
 Test Setup    Test Setup
-#Test Teardown    Test Teardown
+Test Teardown    Test Teardown
 
 *** Variables ***
 ${INVENTORY}    inventory
 ${INVENTORY_ABSOLUE_PATH}    ac_tests/${INVENTORY}
-${PLAYBOOK_INSTANCE}    pk_instance.yml
-${PLAYBOOK_INSTANCE2}    pk_instance2.yml
-
+${PLAYBOOKS_FOLDER}    playbooks
+${PLAYBOOK_CREATE}    ${PLAYBOOKS_FOLDER}/create_instance.yml
+${PLAYBOOK_CREATE_NO_NICS}    ${PLAYBOOKS_FOLDER}/create_no_nics_instance.yml
+${PLAYBOOK_MODIFY}    ${PLAYBOOKS_FOLDER}/modify_instance.yml
+${PLAYBOOK_CREATE_MULTI}    ${PLAYBOOKS_FOLDER}/create_multi_instances.yml
 *** Test Cases ***
-Test
-    Run Ansible Playbook    ${PLAYBOOK_INSTANCE}    inventory=${INVENTORY}
+Create Instance
+    Run Ansible Playbook    ${PLAYBOOK_CREATE}    inventory=${INVENTORY}
     ${stdout}=    Execute Command    sudo gnt-instance info --all
     Log    ${stdout}
-    Run Ansible Playbook    ${PLAYBOOK_INSTANCE2}    inventory=${INVENTORY}
+
+
+Create Multi Instance
+    Run Ansible Playbook    ${PLAYBOOK_CREATE_MULTI}    inventory=${INVENTORY}
     ${stdout}=    Execute Command    sudo gnt-instance info --all
     Log    ${stdout}
+
+Modify Instance
+    Run Ansible Playbook    ${PLAYBOOK_MODIFY}    tag=create    inventory=${INVENTORY}
+    ${stdout}=    Execute Command    sudo gnt-instance info --all
+    Log    ${stdout}
+    Run Ansible Playbook    ${PLAYBOOK_MODIFY}    tag=modify    inventory=${INVENTORY}
+    ${stdout}=    Execute Command    sudo gnt-instance info --all
+    Log    ${stdout}
+
+Create No Nics Instance
+    Run Ansible Playbook    ${PLAYBOOK_CREATE_NO_NICS}    tag=create    inventory=${INVENTORY}
+    ${stdout}=    Execute Command    sudo gnt-instance info --all
+    Log    ${stdout}
+    #Run Ansible Playbook    ${PLAYBOOK_CREATE_NO_NICS}    tag=modify    inventory=${INVENTORY}
+    ${stdout}=    Execute Command    sudo gnt-instance info --all
+    Log    ${stdout}
+
+
 
 *** Keywords ***
 Suite Setup
@@ -79,8 +102,9 @@ Run Vagrant And Get VM IP
     Set Suite Variable    ${IP_VM}
 
 Run Ansible Playbook
-    [Arguments]    ${playbook}    ${inventory}=${INVENTORY}
-    ${result}=    Run Process    python3 \$(which ansible-playbook) -vvv -i ${inventory} ${playbook}    shell=True    cwd=ac_tests
+    [Arguments]    ${playbook}    ${inventory}=${INVENTORY}    ${tag}=${EMPTY}
+    ${tag_option}=    Set Variable If    "${tag}"=="${EMPTY}"    ${EMPTY}    -t ${tag}
+    ${result}=    Run Process    python3 \$(which ansible-playbook) -vvv ${tag_option} -i ${inventory} ${playbook}    shell=True    cwd=ac_tests
     Log    ${result.stdout}
     Log    ${result.stderr}
     Should Be Equal As Integers    0    ${result.rc}    msg=Ansible Playbook have error\n${result.stderr}

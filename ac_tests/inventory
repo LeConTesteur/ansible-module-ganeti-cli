@@ -1,2 +1,2 @@
 [all]
-test ansible_host=192.168.121.29 ansible_user=vagrant ansible_ssh_pass=vagrant
+test ansible_host=192.168.121.226 ansible_user=vagrant ansible_ssh_pass=vagrant
