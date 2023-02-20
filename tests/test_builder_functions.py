@@ -215,7 +215,7 @@ class TestBuildGntInstanceAddListOptions(unittest.TestCase):
                 "net",
                 [PrefixAdd()]
             ),
-            "--net 0:add:name=nic0,vlan=100 --net 1:add:name=nic1,vlan=200 --net 2:add:name=nic2,vlan=300"
+            "--net 0:add,name=nic0,vlan=100 --net 1:add,name=nic1,vlan=200 --net 2:add,name=nic2,vlan=300"
         )
   
     def test_list_with_three_dict_so_one_empty_two_attributs_with_one_prefix(self):
@@ -229,7 +229,7 @@ class TestBuildGntInstanceAddListOptions(unittest.TestCase):
                 "net",
                 [PrefixAdd()]
             ),
-            "--net 1:add:name=nic1,vlan=200 --net 2:add:name=nic2,vlan=300"
+            "--net 1:add,name=nic1,vlan=200 --net 2:add,name=nic2,vlan=300"
         )
 
     def test_list_with_three_dict_nth_attributs_with_nth_prefixes(self):
@@ -245,7 +245,7 @@ class TestBuildGntInstanceAddListOptions(unittest.TestCase):
                 "net",
                 [PrefixRemove(),PrefixAdd(), PrefixModify()]
             ),
-            "--net 0:remove --net 1:add:name=nic1,vlan=100 --net 2:modify:name=nic2,vlan=200,mode=bridged --net 3:modify:name=nic3 --net 4:modify:name=nic4"
+            "--net 0:remove --net 1:add,name=nic1,vlan=100 --net 2:modify,name=nic2,vlan=200,mode=bridged --net 3:modify,name=nic3 --net 4:modify,name=nic4"
         )
 
 if __name__ == '__main__':

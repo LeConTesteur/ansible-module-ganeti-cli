@@ -1,6 +1,5 @@
 """Function for extract data in dictionnary
 """
-import json
 import re
 from functools import reduce
 from typing import List, Any, Callable, Dict
@@ -20,8 +19,6 @@ def dict_get(data:dict, key:str) -> Any:
     """
     if data is None:
         return None
-    if isinstance(data, str):
-        raise Exception(json.dumps(data))
     return dict.get(data, key)
 
 

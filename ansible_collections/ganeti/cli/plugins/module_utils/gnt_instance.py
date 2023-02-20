@@ -1,7 +1,6 @@
 """
 Class GntInstance
 """
-import json
 from typing import Callable, Dict, List, Tuple
 import re
 
@@ -74,7 +73,8 @@ nic_types_choices = ['bridged', 'openvswitch']
 
 disks_options = [
     BuilderCommandOptionsSpecListSubElement(name='name', type="str", require=True),
-    BuilderCommandOptionsSpecListSubElement(name='size', type="int", require=True, create_only=True),
+    BuilderCommandOptionsSpecListSubElement(
+        name='size', type="int", require=True, create_only=True),
     BuilderCommandOptionsSpecListSubElement(name='spindles', type="str", require=True),
     BuilderCommandOptionsSpecListSubElement(name='metavg', type="str", require=True),
     BuilderCommandOptionsSpecListSubElement(name='access', type="str", require=True),
@@ -85,7 +85,8 @@ nics_options = [
     BuilderCommandOptionsSpecListSubElement(name='name', type="str", require=True),
     BuilderCommandOptionsSpecListSubElement(name='link', type="str", require=True),
     BuilderCommandOptionsSpecListSubElement(name='vlan', type="str", require=False),
-    BuilderCommandOptionsSpecListSubElement(name='mode', type="str", default='bridged',require=True),
+    BuilderCommandOptionsSpecListSubElement(
+        name='mode', type="str", default='bridged',require=True),
 ]
 
 hypervisor_params = [
@@ -119,7 +120,8 @@ builder_gnt_instance_spec = BuilderCommandOptionsRootSpec(
         info_key='NICs',
         no_option='--no-nics --ignore-ipolicy'
     ),
-    BuilderCommandOptionsSpecElement(name='os-type', type='str', required=True, info_key='Operating system'),
+    BuilderCommandOptionsSpecElement(
+        name='os-type', type='str', required=True, info_key='Operating system'),
     BuilderCommandOptionsSpecDict(
         *hypervisor_params,
         name='hypervisor-parameters',
@@ -212,7 +214,9 @@ class GntInstance(GntCommand):
         Run command: gnt-instance add
         """
         return self._run_command(
-            BuilderCommand(builder_gnt_instance_spec).generate(module_params=params, info_data={}, create=True),
+            BuilderCommand(builder_gnt_instance_spec).generate(
+                module_params=params, info_data={}, create=True
+            ),
             name,
             command='add'
         )

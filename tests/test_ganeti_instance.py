@@ -168,7 +168,8 @@ class TestMainGanetiInstanceCli(unittest.TestCase):
                 'state': 'present',
                 'name': 'vm_test',
                 'params': {
-                    'disk_template': 'file'
+                    'disk-template': 'file',
+                    'os-type': 'noop',
                 }
             },
             [{'name': 'vm_test', 'disk_template':'plain','admin_state':'down'}],

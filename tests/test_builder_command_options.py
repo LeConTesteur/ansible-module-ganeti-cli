@@ -49,13 +49,13 @@ class BuilderToArgsSpec(unittest.TestCase):
   def test_BuilderCommandOptionsRootSpec(self):
     self._test_to_args_spec(
       [
-        (builders.BuilderCommandOptionsRootSpec(), {}),
-        (builders.BuilderCommandOptionsRootSpec(MockBuilderToArgsSpec('test', 'foo')), {'test':{'value':'foo'}}),
+        (builders.BuilderCommandOptionsRootSpec(), {'options': {}, 'required': False, 'type': 'dict'}),
+        (builders.BuilderCommandOptionsRootSpec(MockBuilderToArgsSpec('test', 'foo')), {'options': {'test':{'value':'foo'}}, 'required': False, 'type': 'dict'}),
         (builders.BuilderCommandOptionsRootSpec(
             MockBuilderToArgsSpec('test1', 'foo'),
             MockBuilderToArgsSpec('test2', 'bar'),
           ), 
-          {'test1':{'value':'foo'}, 'test2':{'value':'bar'}}
+          {'options': {'test1':{'value':'foo'}, 'test2':{'value':'bar'}}, 'required': False, 'type': 'dict'}
         ),
         (builders.BuilderCommandOptionsRootSpec(
             MockBuilderToArgsSpec('test1', 'foo'),
@@ -63,7 +63,7 @@ class BuilderToArgsSpec(unittest.TestCase):
             MockBuilderToArgsSpec('test3', '5'),
             MockBuilderToArgsSpec('test4', '10'),
           ), 
-          {'test1':{'value':'foo'}, 'test2':{'value':'bar'}, 'test3':{'value':'5'}, 'test4':{'value':'10'}}
+          {'options': {'test1':{'value':'foo'}, 'test2':{'value':'bar'}, 'test3':{'value':'5'}, 'test4':{'value':'10'}}, 'required': False, 'type': 'dict'}
         ),
       ]
     )
@@ -165,15 +165,17 @@ class BuilderToArgsSpec(unittest.TestCase):
           )
     builder = builders.BuilderCommand(spec=spec)
     self.assertEqual(builder.generate_args_spec(), {
-      'disk_template': {'type':'str'},
-      'disks': {'type':'list', 'required':False, 'options': {
-        'name':{'type':'str'},
-        'size':{'type':'str', 'required':True},
-      }},
-      'backend_param': {'type':'dict', 'required':False, 'options': {
-        'memory':{'type':'int'},
-        'vcpus':{'type':'int'},
-      }}
+      'type': 'dict', 'required': False, 'options':       {
+        'disk_template': {'type':'str'},
+        'disks': {'type':'list', 'required':False, 'options': {
+          'name':{'type':'str'},
+          'size':{'type':'str', 'required':True},
+        }},
+        'backend_param': {'type':'dict', 'required':False, 'options': {
+          'memory':{'type':'int'},
+          'vcpus':{'type':'int'},
+        }}
+      }
     })
 
 # To options
@@ -185,7 +187,7 @@ class MockBuilderToOptions:
     if index is not None:
       self.index = index
 
-  def to_options(self, param, info): # pylance: disable=
+  def to_options(self, param, info, create): # pylance: disable=
     return ['value={},index={}'.format(self.value,self.index)]
   
 
@@ -198,7 +200,7 @@ class BuilderToOptions(unittest.TestCase):
         param:Dict = data_line[1]
         info:Dict = data_line[2]
         expected:dict = data_line[3]
-        self.assertEqual(builder.to_options(param, info), expected, msg='Error in line {} of data_set'.format(index+1))
+        self.assertEqual(builder.to_options(param, info, False), expected, msg='Error in line {} of data_set'.format(index+1))
 
   def test_BuilderCommandOptionsSpecSubElement(self):
     self._test_to_options([
@@ -278,7 +280,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'foo'}]}, 
         {}, 
-        ['--test 0:add:name=foo']
+        ['--test 0:add,name=foo']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -288,7 +290,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'foo'},{'name':'bar', 'size':'10'}]}, 
         {}, 
-        ['--test 0:add:name=foo --test 1:add:name=bar,size=10']
+        ['--test 0:add,name=foo --test 1:add,name=bar,size=10']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -298,7 +300,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'foo'},{'name':'bar', 'size':'10'}]}, 
         {'Tests':[{'name':'bar'}]}, 
-        ['--test 0:modify:name=foo --test 1:add:name=bar,size=10']
+        ['--test 0:modify,name=foo --test 1:add,name=bar,size=10']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -308,7 +310,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'foo','size':'10'},{'name':'bar', 'size':'10'}]}, 
         {'Tests':[{'name':'foo'}]}, 
-        ['--test 0:modify:size=10 --test 1:add:name=bar,size=10']
+        ['--test 0:modify,size=10 --test 1:add,name=bar,size=10']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -318,7 +320,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'foo','size':'10'},{'name':'bar', 'size':'10'}]}, 
         {'Tests':[{'name':'foo','Size':'10'}]}, 
-        ['--test 0:modify:size=10 --test 1:add:name=bar,size=10']
+        ['--test 0:modify,size=10 --test 1:add,name=bar,size=10']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -328,7 +330,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'bar', 'size':'5'},{'name':'foo','size':'20'}]}, 
         {'Tests':[{'name':'foo','Size':'10'}]}, 
-        ['--test 0:modify:name=bar,size=5 --test 1:add:name=foo,size=20']
+        ['--test 0:modify,name=bar,size=5 --test 1:add,name=foo,size=20']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -338,7 +340,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'bar', 'size':'5'}]}, 
         {'Tests':[{'name':'foo','Size':'10'},{'name':'foo','Size':'10'}]}, 
-        ['--test 0:modify:name=bar,size=5 --test 1:remove']
+        ['--test 0:modify,name=bar,size=5 --test 1:remove']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -348,7 +350,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[{'name':'bar', 'size':'5'}]}, 
         {'Tests':[{'name':'foo','Size':'10'},{'name':'foo','Size':'10'}]}, 
-        ['--test 0:modify:name=bar,size=5 --test 1:remove']
+        ['--test 0:modify,name=bar,size=5 --test 1:remove']
       ),
     ])
     
