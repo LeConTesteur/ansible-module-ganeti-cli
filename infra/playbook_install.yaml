@@ -24,8 +24,6 @@
         - pip
         - setuptools
       extra_args: --upgrade
-    vars:
-      ansible_python_interpreter: /usr/bin/python3
   - name: Install dependance package
     pip:
       name:
@@ -33,8 +31,6 @@
         - dictdiffer
         - flatdict
       extra_args: --upgrade
-    vars:
-      ansible_python_interpreter: /usr/bin/python3
   - name: Install ganeti
     ansible.builtin.apt:
       name:
@@ -72,6 +68,8 @@
       dest: /etc/hosts
     vars:
       node1_ip: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   handlers:
     - name: restart network
       ansible.builtin.systemd:

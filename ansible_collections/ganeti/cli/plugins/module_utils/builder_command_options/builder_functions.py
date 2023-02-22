@@ -114,6 +114,18 @@ def build_state_option(name:str, value:Any) -> str:
     Returns:
         str: the option
     """
+    return "--{}".format(name) if None not in (name, value) and value else ""
+
+def build_no_state_option(name:str, value:Any) -> str:
+    """Build option string for one value
+
+    Args:
+        name (str): name of option
+        value (Any): value of option
+
+    Returns:
+        str: the option
+    """
     return "--no-{}".format(name) if None not in (name, value) and not value else ""
 
 def build_single_option(name:str, value:Any) -> str:

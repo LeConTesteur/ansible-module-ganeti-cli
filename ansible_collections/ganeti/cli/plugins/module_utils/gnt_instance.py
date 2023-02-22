@@ -25,8 +25,10 @@ from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options
     BuilderCommandOptionsSpecElementOnlyCreate,
     BuilderCommandOptionsSpecList,
     BuilderCommandOptionsSpecListSubElement,
+    BuilderCommandOptionsSpecNoStateElement,
     BuilderCommandOptionsSpecStateElement,
-    BuilderCommandOptionsSpecSubElement
+    BuilderCommandOptionsSpecSubElement,
+    CommandType
 )
 
 
@@ -74,7 +76,7 @@ nic_types_choices = ['bridged', 'openvswitch']
 disks_options = [
     BuilderCommandOptionsSpecListSubElement(name='name', type="str", require=True),
     BuilderCommandOptionsSpecListSubElement(
-        name='size', type="int", require=True, create_only=True),
+        name='size', type="int", require=True, only=CommandType.CREATE),
     BuilderCommandOptionsSpecListSubElement(name='spindles', type="str", require=True),
     BuilderCommandOptionsSpecListSubElement(name='metavg', type="str", require=True),
     BuilderCommandOptionsSpecListSubElement(name='access', type="str", require=True),
@@ -118,7 +120,7 @@ builder_gnt_instance_spec = BuilderCommandOptionsRootSpec(
         *nics_options,
         name='net',
         info_key='NICs',
-        no_option='--no-nics --ignore-ipolicy'
+        no_option='--no-nics'
     ),
     BuilderCommandOptionsSpecElement(
         name='os-type', type='str', required=True, info_key='Operating system'),
@@ -132,12 +134,18 @@ builder_gnt_instance_spec = BuilderCommandOptionsRootSpec(
         name='backend-parameters',
         info_key='Back-end parameters'
     ),
-    BuilderCommandOptionsSpecStateElement(name='name-check', create_only=True),
-    BuilderCommandOptionsSpecStateElement(name='ip-check', create_only=True),
-    BuilderCommandOptionsSpecStateElement(name='conflicts-check', create_only=True),
-    BuilderCommandOptionsSpecStateElement(name='install', create_only=True),
-    BuilderCommandOptionsSpecStateElement(name='start', default=False, create_only=True),
-    BuilderCommandOptionsSpecStateElement(name='wait-for-sync'),
+    BuilderCommandOptionsSpecStateElement(name='submit'),
+    BuilderCommandOptionsSpecStateElement(name='ignore-ipolicy'),
+    BuilderCommandOptionsSpecStateElement(name='offline', only=CommandType.MODIFY),
+    BuilderCommandOptionsSpecStateElement(name='online', only=CommandType.MODIFY),
+    BuilderCommandOptionsSpecStateElement(name='hotplug', only=CommandType.MODIFY),
+    BuilderCommandOptionsSpecStateElement(name='hotplug-if-possible', only=CommandType.MODIFY),
+    BuilderCommandOptionsSpecNoStateElement(name='name-check', only=CommandType.CREATE),
+    BuilderCommandOptionsSpecNoStateElement(name='ip-check', only=CommandType.CREATE),
+    BuilderCommandOptionsSpecNoStateElement(name='conflicts-check', only=CommandType.CREATE),
+    BuilderCommandOptionsSpecNoStateElement(name='install', only=CommandType.CREATE),
+    BuilderCommandOptionsSpecNoStateElement(name='start', default=False, only=CommandType.CREATE),
+    BuilderCommandOptionsSpecNoStateElement(name='wait-for-sync'),
 )
 
 class GntInstance(GntCommand):
@@ -215,7 +223,7 @@ class GntInstance(GntCommand):
         """
         return self._run_command(
             BuilderCommand(builder_gnt_instance_spec).generate(
-                module_params=params, info_data={}, create=True
+                module_params=params, info_data={}, to_command=CommandType.CREATE
             ),
             name,
             command='add'
@@ -227,7 +235,7 @@ class GntInstance(GntCommand):
         """
         return self._run_command(
             BuilderCommand(builder_gnt_instance_spec).generate(
-                module_params=params, info_data=vm_info
+                module_params=params, info_data=vm_info, to_command=CommandType.MODIFY
             ),
             name,
             command='modify'
@@ -244,7 +252,7 @@ class GntInstance(GntCommand):
             bool: Have different
         """
         options = BuilderCommand(builder_gnt_instance_spec).generate(
-            module_params=params, info_data=vm_info
+            module_params=params, info_data=vm_info, to_command=CommandType.MODIFY
         )
         return bool(options.strip())
 

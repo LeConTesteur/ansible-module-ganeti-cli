@@ -69,7 +69,7 @@ Test Teardown
 Create Ganeti Cluster
     ${stdout}    ${stderr}    ${rc}=    Execute Command    sudo gnt-cluster init --master-netdev=br_gnt --enabled-hypervisors=fake --enabled-disk-templates=file cluster-test    return_stdout=True    return_stderr=True    return_rc=True
     Log    ${stdout}
-    Should Be Equal as Integers   0    ${rc}    msg=Cannot create ClusterVM\n${stderr}
+    Should Be Equal as Integers   0    ${rc}    msg=Cannot create ClusterVM\n${stdout}\n${stderr}
 
 Clean Ganeti
     Execute Command    sudo gnt-instance stop --timeout\=0 --all
@@ -107,4 +107,4 @@ Run Ansible Playbook
     ${result}=    Run Process    python3 \$(which ansible-playbook) -vvv ${tag_option} -i ${inventory} ${playbook}    shell=True    cwd=ac_tests
     Log    ${result.stdout}
     Log    ${result.stderr}
-    Should Be Equal As Integers    0    ${result.rc}    msg=Ansible Playbook have error\n${result.stderr}
+    Should Be Equal As Integers    0    ${result.rc}    msg=Ansible Playbook have error\n${result.stdout}\n${result.stderr}

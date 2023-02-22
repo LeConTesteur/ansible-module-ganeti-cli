@@ -2,11 +2,14 @@
 """
 import abc
 import copy
+from enum import Enum
 from functools import wraps
 from itertools import chain, zip_longest
 from typing import Any, Dict, Iterator, List, Callable
+from collections.abc import Iterable
 from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builder_functions \
     import (
+        build_no_state_option,
         build_options_with_prefixes,
         build_prefixes_from_count_diff,
         build_single_option,
@@ -50,6 +53,11 @@ def recurcive(property_name:str):
         return wrapper
     return decorator
 
+class CommandType(Enum):
+    CREATE = 1
+    INIT = 1
+    MODIFY = 2
+
 # pylint: disable=too-many-instance-attributes
 class BuilderCommandOptionsSpecAbstract:
     """Abstract builder
@@ -61,7 +69,7 @@ class BuilderCommandOptionsSpecAbstract:
             info_key:str=None,
             param_extractor:ValueParamExtractor=recursive_get,
             info_extractor:ValueInfoExtractor=value_info_extractor,
-            create_only=False,
+            only=[],
             **kwargs
         ) -> None:
         self._name = name
@@ -70,8 +78,13 @@ class BuilderCommandOptionsSpecAbstract:
         self._param_extractor = param_extractor
         self._info_extractor = info_extractor
         self._extra_args = kwargs
-        self._create_only = create_only
         self._default = kwargs.get('default')
+        if not only:
+            self._only_commands = []
+        elif not isinstance(only, Iterable):
+            self._only_commands = [only]
+        else:
+            self._only_commands = only
 
     def __repr__(self) -> str:
         return 'Spec: {} -> {}'.format(self._name, self._info_key)
@@ -120,7 +133,7 @@ class BuilderCommandOptionsSpecAbstract:
             Dict: the arguments specification
         """
 
-    def to_options(self, ansible_param:dict, info:dict, create:bool) -> Iterator[str]:
+    def to_options(self, ansible_param:dict, info:dict, to_command:CommandType=None) -> Iterator[str]:
         """Generate command options
 
         Args:
@@ -134,16 +147,16 @@ class BuilderCommandOptionsSpecAbstract:
         Yields:
             Iterator[str]: The list of command options
         """
-        if self._create_only and not create:
+        if not self.must_generate_option(to_command):
             return []
         return self._to_options(
             ansible_param=ansible_param,
             info=info,
-            create=create
+            to_command=to_command
         )
 
     @abc.abstractmethod
-    def _to_options(self, ansible_param:dict, info:dict, create:bool) -> Iterator[str]:
+    def _to_options(self, ansible_param:dict, info:dict, to_command:CommandType) -> Iterator[str]:
         """Generate command options
 
         Args:
@@ -158,6 +171,10 @@ class BuilderCommandOptionsSpecAbstract:
             Iterator[str]: The list of command options
         """
 
+    def must_generate_option(self, to_command:CommandType):
+        if not self._only_commands: # not only is all
+            return True
+        return to_command in self._only_commands
 
 class BuilderCommandOptionsSpec(BuilderCommandOptionsSpecAbstract):
     """Builder of generic spec
@@ -174,8 +191,8 @@ class BuilderCommandOptionsSpec(BuilderCommandOptionsSpecAbstract):
             spec.name: spec.to_args_spec() for spec in self._spec
         }
 
-    def _to_options(self, ansible_param, info, create) -> Iterator[str]:
-        return chain(*[spec.to_options(ansible_param, info, create) for spec in self._spec])
+    def _to_options(self, ansible_param, info, to_command) -> Iterator[str]:
+        return chain(*[spec.to_options(ansible_param, info, to_command) for spec in self._spec])
 
 class BuilderCommandOptionsRootSpec(BuilderCommandOptionsSpec):
     """The root Builder spec
@@ -209,13 +226,13 @@ class BuilderCommandOptionsSpecDict(BuilderCommandOptionsSpec):
             'options': super().to_args_spec(),
         }
 
-    def _to_options(self, ansible_param, info, create) -> List[str]:
+    def _to_options(self, ansible_param, info, to_command) -> List[str]:
         prefix = PrefixNone()
         if self.prefix_builder is not None:
             prefix = self.prefix_builder(ansible_param, info)
         option = ','.join(
             chain.from_iterable(
-                [spec.to_options(ansible_param, info, create) for spec in self._spec]
+                [spec.to_options(ansible_param, info, to_command) for spec in self._spec]
                 )
             )
         return [ build_options_with_prefixes(
@@ -240,23 +257,26 @@ class BuilderCommandOptionsSpecList(BuilderCommandOptionsSpec):
             'options': super().to_args_spec(),
         }
 
-    def _to_options(self, ansible_param, info, create) -> Iterator[str]:
+    def _to_options(self, ansible_param, info, to_command) -> Iterator[str]:
         param_value = self._param_extractor(ansible_param, self.names()) or []
         info_value = self._info_extractor(info, self.info_keys()) or []
         size_param_list, size_info_list = len(param_value), len(info_value)
-        value = []
-        if size_param_list == 0 and self.no_option:
-            value.append(self.no_option)
-        if not create:
-            prefixes = list(build_prefixes_from_count_diff(size_param_list, size_info_list))
-        else:
-            prefixes = PrefixIndex()
 
-        value.append(
+        if to_command == CommandType.CREATE and size_param_list == 0:
+            return [self.no_option] if self.no_option else []
+        elif to_command == CommandType.MODIFY and size_info_list == 0:
+            return []
+
+        if to_command == CommandType.CREATE:
+            prefixes = PrefixIndex()
+        else:
+            prefixes = list(build_prefixes_from_count_diff(size_param_list, size_info_list))
+
+        return [
             build_options_with_prefixes(
                 chain.from_iterable([
                     _BuilderCommandOptionsSpecListElement(*self._spec, index=index)
-                        .to_options(value[0], value[1], create)
+                        .to_options(value[0], value[1], to_command)
                     for index, value in enumerate(
                             zip_longest(param_value, info_value, fillvalue={})
                         )
@@ -264,9 +284,7 @@ class BuilderCommandOptionsSpecList(BuilderCommandOptionsSpec):
                 self.name,
                 prefixes=prefixes
                 )
-        )
-        return value
-
+        ]
 
 class _BuilderCommandOptionsSpecListElement(BuilderCommandOptionsSpecAbstract):
     """Intermediate Element list builder for remove parent names and information
@@ -281,11 +299,11 @@ class _BuilderCommandOptionsSpecListElement(BuilderCommandOptionsSpecAbstract):
     def to_args_spec(self) -> Dict:
         pass
 
-    def _to_options(self, ansible_param, info, create) -> Iterator[str]:
+    def _to_options(self, ansible_param, info, to_command) -> Iterator[str]:
         return [
             ','.join(
                 chain.from_iterable(
-                    [spec.to_options(ansible_param, info, create) for spec in self._spec])
+                    [spec.to_options(ansible_param, info, to_command) for spec in self._spec])
                 )
 
             ]
@@ -304,7 +322,7 @@ class BuilderCommandOptionsSpecElement(BuilderCommandOptionsSpecAbstract):
     def to_args_spec(self) -> Dict:
         return self._extra_args
 
-    def _to_options(self, ansible_param, info, create) -> Iterator[str]:
+    def _to_options(self, ansible_param, info, to_command) -> Iterator[str]:
         param_value = self._param_extractor(ansible_param, self.names())
         info_value = self._info_extractor(info, self.info_keys())
         if param_value == info_value:
@@ -347,15 +365,20 @@ class BuilderCommandOptionsSpecListSubElement(BuilderCommandOptionsSpecSubElemen
 class BuilderCommandOptionsSpecElementOnlyCreate(BuilderCommandOptionsSpecElement):
     """Spec builder for option only create step
     """
-    def __init__(self, *, create_only=True, build_function=build_single_option, **kwargs) -> None:
-        super().__init__(build_function=build_function, create_only=create_only, **kwargs)
+    def __init__(self, *, build_function=build_single_option, **kwargs) -> None:
+        super().__init__(build_function=build_function, only=[CommandType.CREATE], **kwargs)
 
-class BuilderCommandOptionsSpecStateElement(BuilderCommandOptionsSpecElementOnlyCreate):
+class BuilderCommandOptionsSpecStateElement(BuilderCommandOptionsSpecElement):
     """State builder
     """
-    def __init__(self, *_, default=True, **kwargs) -> None:
+    def __init__(self, *_, default=False, **kwargs) -> None:
         super().__init__(type='bool', default=default, build_function=build_state_option, **kwargs)
 
+class BuilderCommandOptionsSpecNoStateElement(BuilderCommandOptionsSpecElement):
+    """No State builder
+    """
+    def __init__(self, *_, default=True, **kwargs) -> None:
+        super().__init__(type='bool', default=default, build_function=build_no_state_option, **kwargs)
 
 class BuilderCommand:
     """Generate final command options"""
@@ -371,7 +394,7 @@ class BuilderCommand:
             *extra_options:List[str],
             module_params: dict,
             info_data: dict,
-            create:bool=False
+            to_command:CommandType=None
         ) -> str:
         """Generate Options"""
         return ' '.join(
@@ -379,7 +402,7 @@ class BuilderCommand:
                 lambda x:x,
                 chain(
                     extra_options,
-                    self.spec.to_options(module_params, info_data, create)
+                    self.spec.to_options(module_params, info_data, to_command)
                 )
             )
         )
