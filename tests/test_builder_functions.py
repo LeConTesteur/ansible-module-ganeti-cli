@@ -16,11 +16,23 @@ class TestBuildCmmandOptionsExtractors(unittest.TestCase):
       data_set=[
         (None, None, ''),
         ('test', None, ''),
+        ('test', True, '--test'),
+        ('test', False, ''),
+      ]
+    )
+
+  def test_build_no_state_option(self):
+    self._test_builder_functions(
+      function=builder_functions.build_no_state_option,
+      data_set=[
+        (None, None, ''),
+        ('test', None, ''),
         ('test', True, ''),
         ('test', False, '--no-test'),
       ]
     )
   
+
   def test_build_single_option(self):
     self._test_builder_functions(
       function=builder_functions.build_single_option,

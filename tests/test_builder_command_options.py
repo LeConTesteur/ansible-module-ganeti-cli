@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple
 import unittest
 
-from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builders import BuilderCommandOptionsSpecAbstract
+from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.builders import BuilderCommandOptionsSpecAbstract, CommandType
 from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options import builders
 from ansible_collections.ganeti.cli.plugins.module_utils.builder_command_options.prefixes import PrefixStr
 
@@ -193,14 +193,14 @@ class MockBuilderToOptions:
 
 class BuilderToOptions(unittest.TestCase):
 
-  def _test_to_options(self, data_set:List[Tuple[BuilderCommandOptionsSpecAbstract, dict]]):
+  def _test_to_options(self, data_set:List[Tuple[BuilderCommandOptionsSpecAbstract, dict]], to_command:CommandType=None):
     for index, data_line in enumerate(data_set):
       with self.subTest(index=index):
         builder: BuilderCommandOptionsSpecAbstract = data_line[0]
         param:Dict = data_line[1]
         info:Dict = data_line[2]
         expected:dict = data_line[3]
-        self.assertEqual(builder.to_options(param, info, False), expected, msg='Error in line {} of data_set'.format(index+1))
+        self.assertEqual(builder.to_options(param, info, to_command), expected, msg='Error in line {} of data_set'.format(index+1))
 
   def test_BuilderCommandOptionsSpecSubElement(self):
     self._test_to_options([
@@ -215,7 +215,21 @@ class BuilderToOptions(unittest.TestCase):
       (builders.BuilderCommandOptionsSpecSubElement(type='', index=0,name='test',info_key='Test/{}'), {'test':1}, {'Test/1':1}, ['test=1']),
       (builders.BuilderCommandOptionsSpecSubElement(type='', index=0,name='test',info_key='Test/{}'), {}, {'Test/0':1}, ['test=default']),
     ])
-    
+
+  def test_BuilderCommandOptionsSpec_Only(self):
+    self._test_to_options([
+      (builders.BuilderCommandOptionsSpecElement(type='', name='test',info_key='Test', only=CommandType.CREATE), {}, {}, []),
+      (builders.BuilderCommandOptionsSpecElement(type='', name='test',info_key='Test', only=CommandType.CREATE), {'test':1}, {}, ['--test=1']),
+      (builders.BuilderCommandOptionsSpecElement(type='', name='test',info_key='Test', only=CommandType.CREATE), {}, {'Test':1}, ['--test=default']),
+    ],
+    CommandType.CREATE)
+    self._test_to_options([
+      (builders.BuilderCommandOptionsSpecElement(type='', name='test',info_key='Test', only=CommandType.CREATE), {}, {}, []),
+      (builders.BuilderCommandOptionsSpecElement(type='', name='test',info_key='Test', only=CommandType.CREATE), {'test':1}, {}, []),
+      (builders.BuilderCommandOptionsSpecElement(type='', name='test',info_key='Test', only=CommandType.CREATE), {}, {'Test':1}, []),
+    ],
+    CommandType.MODIFY)
+  
   def test_BuilderCommandOptionsSpecElement(self):
     self._test_to_options([
       (builders.BuilderCommandOptionsSpecElement(type='', name='test',info_key='Test'), {}, {}, []),
@@ -234,9 +248,9 @@ class BuilderToOptions(unittest.TestCase):
       (builders._BuilderCommandOptionsSpecListElement(MockBuilderToOptions(value=0),MockBuilderToOptions(value=2), index=3), {}, {}, ['value=0,index=3,value=2,index=3']),
     ])
     
-  def test_BuilderCommandOptionsSpecList(self):
-        self._test_to_options([
-      (builders.BuilderCommandOptionsSpecList(name='test', info_key='Tests'), {}, {}, ['']),
+  def test_BuilderCommandOptionsSpecListCreate(self):
+    self._test_to_options([
+      (builders.BuilderCommandOptionsSpecList(name='test', info_key='Tests'), {}, {}, []),
       (
         builders.BuilderCommandOptionsSpecList(
           builders.BuilderCommandOptionsSpecSubElement(type='', name='name',info_key='name'),
@@ -244,7 +258,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {}, 
         {}, 
-        ['--no-options', '']
+        ['--no-options']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -253,7 +267,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[]}, 
         {}, 
-        ['--no-options', '']
+        ['--no-options']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -262,7 +276,7 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':[]}, 
         {'Tests':[{'name':'foo'}]}, 
-        ['--no-options', '--test 0:remove']
+        ['--no-options']
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -271,7 +285,68 @@ class BuilderToOptions(unittest.TestCase):
         ), 
         {'test':None}, 
         {'Tests':[{'name':'foo'}]}, 
-        ['--test 0:remove']
+        []
+      ),
+      (
+        builders.BuilderCommandOptionsSpecList(
+          builders.BuilderCommandOptionsSpecSubElement(type='', name='name',info_key='name'),
+          name='test', info_key='Tests', no_option='--no-options'
+        ), 
+        {'test':[{'name':'foo'}]}, 
+        {}, 
+        ['--test 0:name=foo']
+      ),
+      (
+        builders.BuilderCommandOptionsSpecList(
+          builders.BuilderCommandOptionsSpecSubElement(type='', name='name',info_key='name'),
+          builders.BuilderCommandOptionsSpecSubElement(type='', name='size',info_key='Size'),
+          name='test', info_key='Tests', no_option='--no-options'
+        ), 
+        {'test':[{'name':'foo'},{'name':'bar', 'size':'10'}]}, 
+        {}, 
+        ['--test 0:name=foo --test 1:name=bar,size=10']
+      ),
+    ],
+    CommandType.CREATE)
+
+  def test_BuilderCommandOptionsSpecListModify(self):
+    self._test_to_options([
+      (builders.BuilderCommandOptionsSpecList(name='test', info_key='Tests'), {}, {}, []),
+      (
+        builders.BuilderCommandOptionsSpecList(
+          builders.BuilderCommandOptionsSpecSubElement(type='', name='name',info_key='name'),
+          name='test', info_key='Tests', no_option='--no-options'
+        ), 
+        {}, 
+        {}, 
+        []
+      ),
+      (
+        builders.BuilderCommandOptionsSpecList(
+          builders.BuilderCommandOptionsSpecSubElement(type='', name='name',info_key='name'),
+          name='test', info_key='Tests', no_option='--no-options'
+        ), 
+        {'test':[]}, 
+        {}, 
+        []
+      ),
+      (
+        builders.BuilderCommandOptionsSpecList(
+          builders.BuilderCommandOptionsSpecSubElement(type='', name='name',info_key='name'),
+          name='test', info_key='Tests', no_option='--no-options'
+        ), 
+        {'test':[]}, 
+        {'Tests':[{'name':'foo'}]}, 
+        []
+      ),
+      (
+        builders.BuilderCommandOptionsSpecList(
+          builders.BuilderCommandOptionsSpecSubElement(type='', name='name',info_key='name'),
+          name='test', info_key='Tests'
+        ), 
+        {'test':None}, 
+        {'Tests':[{'name':'foo'}]}, 
+        []
       ),
       (
         builders.BuilderCommandOptionsSpecList(
@@ -352,7 +427,8 @@ class BuilderToOptions(unittest.TestCase):
         {'Tests':[{'name':'foo','Size':'10'},{'name':'foo','Size':'10'}]}, 
         ['--test 0:modify,name=bar,size=5 --test 1:remove']
       ),
-    ])
+    ],
+    CommandType.MODIFY)
     
   def test_BuilderCommandOptionsSpecDict(self):
         self._test_to_options([

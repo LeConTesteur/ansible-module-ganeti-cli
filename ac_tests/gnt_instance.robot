@@ -48,7 +48,7 @@ Create No Nics Instance
 
 *** Keywords ***
 Suite Setup
-    Run Vagrant And Get VM IP
+    Run Vagrant And Get VM IP    %{DEBIAN_VERSION}
     Create inventory
 
 Suite Teardown

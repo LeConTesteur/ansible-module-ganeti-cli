@@ -54,6 +54,9 @@ def recurcive(property_name:str):
     return decorator
 
 class CommandType(Enum):
+    """
+    Enum for type command. USe in generation of options
+    """
     CREATE = 1
     INIT = 1
     MODIFY = 2
@@ -69,7 +72,7 @@ class BuilderCommandOptionsSpecAbstract:
             info_key:str=None,
             param_extractor:ValueParamExtractor=recursive_get,
             info_extractor:ValueInfoExtractor=value_info_extractor,
-            only=[],
+            only=None,
             **kwargs
         ) -> None:
         self._name = name
@@ -133,7 +136,9 @@ class BuilderCommandOptionsSpecAbstract:
             Dict: the arguments specification
         """
 
-    def to_options(self, ansible_param:dict, info:dict, to_command:CommandType=None) -> Iterator[str]:
+    def to_options(
+            self, ansible_param:dict, info:dict, to_command:CommandType=None
+        ) -> Iterator[str]:
         """Generate command options
 
         Args:
@@ -171,7 +176,15 @@ class BuilderCommandOptionsSpecAbstract:
             Iterator[str]: The list of command options
         """
 
-    def must_generate_option(self, to_command:CommandType):
+    def must_generate_option(self, to_command:CommandType) -> bool:
+        """Test if need to generate option
+
+        Args:
+            to_command (CommandType): Tyoe commande
+
+        Returns:
+            bool: Need to generate option
+        """
         if not self._only_commands: # not only is all
             return True
         return to_command in self._only_commands
@@ -264,7 +277,7 @@ class BuilderCommandOptionsSpecList(BuilderCommandOptionsSpec):
 
         if to_command == CommandType.CREATE and size_param_list == 0:
             return [self.no_option] if self.no_option else []
-        elif to_command == CommandType.MODIFY and size_info_list == 0:
+        if to_command == CommandType.MODIFY and size_param_list == 0:
             return []
 
         if to_command == CommandType.CREATE:
@@ -378,7 +391,8 @@ class BuilderCommandOptionsSpecNoStateElement(BuilderCommandOptionsSpecElement):
     """No State builder
     """
     def __init__(self, *_, default=True, **kwargs) -> None:
-        super().__init__(type='bool', default=default, build_function=build_no_state_option, **kwargs)
+        super().__init__(
+            type='bool', default=default, build_function=build_no_state_option, **kwargs)
 
 class BuilderCommand:
     """Generate final command options"""
