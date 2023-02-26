@@ -7,7 +7,7 @@
   - name: Enabled password in sshd
     lineinfile:
       path: /etc/ssh/sshd_config
-      regex: '^#PasswordAuthentication'
+      regex: '^#?PasswordAuthentication\s+no'
       line: PasswordAuthentication yes
     notify:
       - restart sshd
@@ -28,7 +28,6 @@
     pip:
       name:
         - pyyaml
-        - dictdiffer
         - flatdict
       extra_args: --upgrade
   - name: Install ganeti
@@ -39,9 +38,9 @@
       state: present
       update_cache: yes
   - name: create bridge
-    copy:
-      src: br_gnt
-      dest: /etc/network/interfaces.d/
+    template:
+      src: br_gnt.j2
+      dest: /etc/network/interfaces
       owner: root
       group: root
       mode: 0644
@@ -66,10 +65,12 @@
     template:
       src: hosts.j2
       dest: /etc/hosts
-    vars:
-      node1_ip: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}"
   vars:
     ansible_python_interpreter: /usr/bin/python3
+    node1_ip: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}"
+    node1_gateway: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['gateway']}}"
+    node1_netmask: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['netmask']}}"
+    node1_interface: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['interface']}}"
   handlers:
     - name: restart network
       ansible.builtin.systemd:

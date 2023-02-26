@@ -140,6 +140,7 @@ builder_gnt_instance_spec = BuilderCommandOptionsRootSpec(
     BuilderCommandOptionsSpecStateElement(name='online', only=CommandType.MODIFY),
     BuilderCommandOptionsSpecStateElement(name='hotplug', only=CommandType.MODIFY),
     BuilderCommandOptionsSpecStateElement(name='hotplug-if-possible', only=CommandType.MODIFY),
+    BuilderCommandOptionsSpecStateElement(name='force', only=CommandType.MODIFY),
     BuilderCommandOptionsSpecNoStateElement(name='name-check', only=CommandType.CREATE),
     BuilderCommandOptionsSpecNoStateElement(name='ip-check', only=CommandType.CREATE),
     BuilderCommandOptionsSpecNoStateElement(name='conflicts-check', only=CommandType.CREATE),

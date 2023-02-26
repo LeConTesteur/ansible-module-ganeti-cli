@@ -24,17 +24,6 @@
             - name: test2
               link: br_gnt
               vlan: 100
-    - name: Modify Instance - without nics
-      ganeti.cli.gnt_instance:
-        name: create_no_nics_instance_2
-        state: present
-        params:
-          disk-template: file
-          disk:
-            - size: 10G
-          os-type: noop
-          name-check: False
-          ip-check: False
-          hypervisor: fake
       tags:
-        - modify
+        - create
+

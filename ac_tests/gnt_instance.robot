@@ -18,7 +18,7 @@ ${PLAYBOOK_MODIFY}    ${PLAYBOOKS_FOLDER}/modify_instance.yml
 ${PLAYBOOK_CREATE_MULTI}    ${PLAYBOOKS_FOLDER}/create_multi_instances.yml
 *** Test Cases ***
 Create Instance
-    Run Ansible Playbook    ${PLAYBOOK_CREATE}    inventory=${INVENTORY}
+    Run Ansible Playbook    ${PLAYBOOK_CREATE}    tag=create    inventory=${INVENTORY}
     ${stdout}=    Execute Command    sudo gnt-instance info --all
     Log    ${stdout}
 
@@ -60,14 +60,16 @@ Test Setup
     Open Connection    ${IP_VM}
     Login    vagrant     vagrant
     Clean Ganeti
-    Create Ganeti Cluster
+    Create Ganeti Cluster    %{DEBIAN_VERSION}
 
 Test Teardown
     Clean Ganeti
     Close All Connections
 
 Create Ganeti Cluster
-    ${stdout}    ${stderr}    ${rc}=    Execute Command    sudo gnt-cluster init --master-netdev=br_gnt --enabled-hypervisors=fake --enabled-disk-templates=file cluster-test    return_stdout=True    return_stderr=True    return_rc=True
+    [Arguments]    ${debian_version}=stretch
+    ${option}=    Set Variable If    "${debian_version}" == "stretch"    ${EMPTY}    --default-iallocator-params\='-no-capacity-checks'
+    ${stdout}    ${stderr}    ${rc}=    Execute Command    sudo gnt-cluster init --master-netdev=br_gnt --enabled-hypervisors=fake --enabled-disk-templates=file ${option} cluster-test    return_stdout=True    return_stderr=True    return_rc=True
     Log    ${stdout}
     Should Be Equal as Integers   0    ${rc}    msg=Cannot create ClusterVM\n${stdout}\n${stderr}
 
@@ -86,7 +88,7 @@ Remove inventory
     Remove File    ${INVENTORY_ABSOLUE_PATH}
 
 Run Vagrant And Get VM IP
-    [Arguments]    ${debian_version}=stretch64
+    [Arguments]    ${debian_version}=stretch
     #${result}=    Run Process    vagrant plugin install vagrant-libvirt    shell=True    cwd=infra
     #Log    ${result.stdout}
     #Should Be Equal as Integers   0    ${result.rc}    msg=Impossible to install libvirt provider\n${result.stderr}
